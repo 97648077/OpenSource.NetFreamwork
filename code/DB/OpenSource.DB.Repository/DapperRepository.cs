@@ -142,7 +142,7 @@ namespace OpenSource.DB.Repository
 
         #region Pages
 
-        public PageListView<TEntity> FindAllPages(long from, long to, Expression<Func<TEntity, bool>> expression,Expression<Func<TEntity, object>> field, bool isDesc)
+        public PageListView<TEntity> FindAllPages(long from, long to, Expression<Func<TEntity, bool>> expression,Expression<Func<TEntity, object>> field , bool isDesc = false)
         {
 
             var queryResult = SqlGenerator.GetSelectAll(expression);

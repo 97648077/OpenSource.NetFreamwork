@@ -26,7 +26,7 @@ namespace OpenSource.DB.Repository.Tests
         public void FindPageTest()
         {
             var result = IocManager.IOCManager.Container.GetInstance<Itbl_AccountRepository>();
-            var getresult = result.FindAllPages(1, 5, null, x => x.Id, true);
+            var getresult = result.FindAll(x=> x.Id.In(new long[]{1,2,3,4}));
             //DapperRepository<tbl_PublicAccount> _dapper = new DapperRepository<tbl_PublicAccount>();
             Assert.IsTrue(true);
         }
@@ -35,8 +35,11 @@ namespace OpenSource.DB.Repository.Tests
         public void UpdateTests()
         {
             var _dapper = IocManager.IOCManager.Container.GetInstance<Itbl_AccountRepository>();
-            var result = _dapper.FindAll(x => x.Id == 7 || x.Id == 6);
-            //_dapper.Update(result);
+            var result = _dapper.FindAll(x => x.Id == 7 || x.Id == 6).First();
+
+
+
+            _dapper.Update(result);
             Assert.IsTrue(true);
         }
 
@@ -60,6 +63,15 @@ namespace OpenSource.DB.Repository.Tests
         {
             DapperRepository<tbl_PublicAccount> _dapper = new DapperRepository<tbl_PublicAccount>();
 
+            Assert.IsTrue(true);
+        }
+        [TestMethod]
+        public void TransTests()
+        {
+            var _dapper = IocManager.IOCManager.Container.GetInstance<Itbl_AccountRepository>();
+            var result = _dapper.FindAll(x => x.Id == 7 || x.Id == 6).First();
+            result.Status = 99;
+            _dapper.TestTrans(result);
             Assert.IsTrue(true);
         }
     }

@@ -237,7 +237,7 @@ namespace OpenSource.DB.Repository.SqlGenerator
         private static string GetFieldsSelect(string tableName, IEnumerable<PropertyMetadata> properties)
         {
             //Projection function
-            Func<PropertyMetadata, string> projectionFunction = (p) => !string.IsNullOrEmpty(p.Alias) ? $"{tableName}.{p.ColumnName} AS {p.Name}" : $"{tableName}.{p.ColumnName}";
+            Func<PropertyMetadata, string> projectionFunction = (p) => !string.IsNullOrEmpty(p.Alias) ? $"{p.ColumnName} AS {p.Name}" : $"{p.ColumnName}";
 
             return string.Join(", ", properties.Select(projectionFunction));
         }
@@ -285,16 +285,16 @@ namespace OpenSource.DB.Repository.SqlGenerator
             {
                 case "In":
                 case "Not_In":
-                    builder.Append(string.Format("{0}.{1} {2} ({3}) ", TableName, item.PropertyName,
+                    builder.Append(string.Format("{0} {1} ({2}) ", item.PropertyName,
                              item.QueryOperator.Replace("_", " "), item.PropertyValue));
                     break;
                 case "Like":
                 case "Not_Like":
-                    builder.Append(string.Format("{0}.{1} {2} '{3}' ", TableName, item.PropertyName,
+                    builder.Append(string.Format("{0} {1} '{2}' ",  item.PropertyName,
                          item.QueryOperator.Replace("_", " "), item.PropertyValue));
                     break;
                 default:
-                    builder.Append(string.Format("{0} {1}.{2} {3} @{2} ", item.LinkingOperator, TableName,
+                    builder.Append(string.Format("{0} {1} {2} @{1} ", item.LinkingOperator, 
                               item.PropertyName, item.QueryOperator));
                     obj[item.PropertyName] = item.PropertyValue;
                     break;
