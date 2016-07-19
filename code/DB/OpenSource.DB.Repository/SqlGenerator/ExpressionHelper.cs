@@ -142,9 +142,9 @@ namespace OpenSource.DB.Repository.SqlGenerator
             {
                 MethodCallExpression mce = (MethodCallExpression)exp;
                 if (mce.Method.Name == "Like")
-                    return string.Format("({0} LICKE {1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
+                    return string.Format("({0} LIKE {1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
                 else if (mce.Method.Name == "NotLike")
-                    return string.Format("({0} Not LICKE {1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
+                    return string.Format("({0} Not LIKE {1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
                 else if (mce.Method.Name == "In")
                     return string.Format("{0} IN ({1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
                 else if (mce.Method.Name == "NotIn")
