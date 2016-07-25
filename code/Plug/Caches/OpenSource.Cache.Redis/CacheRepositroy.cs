@@ -57,7 +57,8 @@ namespace OpenSource.Cache.Redis
         public T GetExpire<T>(string key, TimeSpan expiresAt) where T : class
         {
             var result = Get<T>(key);
-            _db.KeyExpire(key, expiresAt);
+            if (null != result)
+                _db.KeyExpire(key, expiresAt);
             return result;
         }
 
