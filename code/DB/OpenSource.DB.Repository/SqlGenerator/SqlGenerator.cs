@@ -146,18 +146,23 @@ namespace OpenSource.DB.Repository.SqlGenerator
             return new SqlQuery(sqlBuilder.ToString(), entity);
         }
 
-        public virtual SqlQuery GetUpdate(TEntity entity)
+        public virtual SqlQuery GetUpdate(TEntity entity, Expression<Func<TEntity, object>> field = null)
         {
             var properties =
-                this.BaseProperties.Where(
-                    p => !this.KeyProperties.Any(k => k.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)));
+               this.BaseProperties.Where(
+                   p => !this.KeyProperties.Any(k => k.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)));
 
             var sqlBuilder = new StringBuilder();
-            sqlBuilder.AppendFormat("UPDATE {0} SET {1} WHERE {2}", this.TableName,
-                string.Join(", ", properties.Select(p => $"{p.ColumnName} = @{p.Name}")), string.Join(" AND ", this.KeyProperties.Select(p => $"{p.ColumnName} = @{p.Name}")))
-            ;
+            sqlBuilder.AppendFormat("UPDATE {0} SET {1} WHERE {2}", this.TableName, BuilderUpdate(properties, field), string.Join(" AND ", this.KeyProperties.Select(p => $"{p.ColumnName} = @{p.Name}")));
 
             return new SqlQuery(sqlBuilder.ToString().TrimEnd(), entity);
+        }
+
+        private string BuilderUpdate(IEnumerable<PropertyMetadata> properties, Expression<Func<TEntity, object>> field)
+        {
+            if (null == field) return string.Join(",", properties.Select(p => $"{p.ColumnName} = @{p.Name}"));
+            var fieldary = ExpressionHelper.ExpressionRouter(field.Body).Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            return string.Join(",", properties.Select(p => fieldary.Contains(p.ColumnName) ? $"{p.ColumnName} = @{p.Name}" : "null")).Replace("null,", "");
         }
 
         #region Get Select
@@ -290,11 +295,11 @@ namespace OpenSource.DB.Repository.SqlGenerator
                     break;
                 case "Like":
                 case "Not_Like":
-                    builder.Append(string.Format("{0} {1} '{2}' ",  item.PropertyName,
+                    builder.Append(string.Format("{0} {1} '{2}' ", item.PropertyName,
                          item.QueryOperator.Replace("_", " "), item.PropertyValue));
                     break;
                 default:
-                    builder.Append(string.Format("{0} {1} {2} @{1} ", item.LinkingOperator, 
+                    builder.Append(string.Format("{0} {1} {2} @{1} ", item.LinkingOperator,
                               item.PropertyName, item.QueryOperator));
                     obj[item.PropertyName] = item.PropertyValue;
                     break;

@@ -14,7 +14,7 @@ namespace OpenSource.DB.IRepository
 
         bool Delete(TEntity instance);
 
-        bool Update(TEntity instance);
+        bool Update(TEntity instance, Expression<Func<TEntity, object>> field = null);
 
         IEnumerable<TEntity> FindAllBetween(object from, object to, Expression<Func<TEntity, object>> btwField);
 

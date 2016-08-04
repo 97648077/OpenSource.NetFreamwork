@@ -37,7 +37,7 @@ namespace OpenSource.DB.Repository.SqlGenerator
 
         SqlQuery GetInsert(TEntity entity);
 
-        SqlQuery GetUpdate(TEntity entity);
+        SqlQuery GetUpdate(TEntity entity, Expression<Func<TEntity, object>> field = null);
 
         SqlQuery GetDelete(TEntity entity);
 

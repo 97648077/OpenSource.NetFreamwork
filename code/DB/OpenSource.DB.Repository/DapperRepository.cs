@@ -108,9 +108,9 @@ namespace OpenSource.DB.Repository
 
         #region Update
 
-        public virtual bool Update(TEntity instance)
+        public virtual bool Update(TEntity instance, Expression<Func<TEntity, object>> field = null)
         {
-            var query = SqlGenerator.GetUpdate(instance);
+            var query = SqlGenerator.GetUpdate(instance, field);
             var Connection = MyConnection.Pop();
             var updated = Connection.Execute(query.Sql, instance) > 0;
             MyConnection.Push(Connection);
@@ -142,12 +142,12 @@ namespace OpenSource.DB.Repository
 
         #region Pages
 
-        public PageListView<TEntity> FindAllPages(long from, long to, Expression<Func<TEntity, bool>> expression,Expression<Func<TEntity, object>> field , bool isDesc = false)
+        public PageListView<TEntity> FindAllPages(long from, long to, Expression<Func<TEntity, bool>> expression, Expression<Func<TEntity, object>> field, bool isDesc = false)
         {
 
             var queryResult = SqlGenerator.GetSelectAll(expression);
             var countResult = SqlGenerator.GetSelectCount(queryResult.Sql, queryResult.Param);
-            var pageResult = SqlGenerator.GetSelectPages(from, to, queryResult.Sql, queryResult.Param, field,isDesc);
+            var pageResult = SqlGenerator.GetSelectPages(from, to, queryResult.Sql, queryResult.Param, field, isDesc);
             var Connection = MyConnection.Pop();
             var result = new PageListView<TEntity>
             {

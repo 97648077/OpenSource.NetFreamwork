@@ -26,7 +26,7 @@ namespace OpenSource.DB.Repository.Tests
         public void FindPageTest()
         {
             var result = IocManager.IOCManager.Container.GetInstance<Itbl_AccountRepository>();
-            var getresult = result.FindAll(x=> x.Id.In(new long[]{1,2,3,4}));
+            var getresult = result.FindAll(x => x.Id.In(new long[] { 1, 2, 3, 4 }));
             //DapperRepository<tbl_PublicAccount> _dapper = new DapperRepository<tbl_PublicAccount>();
             Assert.IsTrue(true);
         }
@@ -35,11 +35,11 @@ namespace OpenSource.DB.Repository.Tests
         public void UpdateTests()
         {
             var _dapper = IocManager.IOCManager.Container.GetInstance<Itbl_AccountRepository>();
-            var result = _dapper.FindAll(x => x.Id == 7 || x.Id == 6).First();
-
-
-
-            _dapper.Update(result);
+            var result = _dapper.FindAll(x => x.Id.In(new long[] { 6,7 })).First();
+            result.password = "TkNHlwfUA2J3HWuuLzHQm8NgaxXxPa1fh3gI0zk=";
+            result.WeChats = "1000";
+            result.Status = 88;
+            _dapper.Update(result, c => new object[]{c.password, c.Status, c.WeChats });
             Assert.IsTrue(true);
         }
 
