@@ -14,10 +14,9 @@ foreach(Table tbl in from t in tables where !t.Ignore select t)
 manager.StartNewFile(tbl.Name+"Repository.cs");#>  
 using System;
 using OpenSource.DB.IRepository;
-using OpenSource.DB.Repository;
 using OpenSource.Model;
 
-namespace OpenSource.Model
+namespace OpenSource.DB.Repository
 {
 <# if (tbl.PK!=null && tbl.PK.IsAutoIncrement) { if (tbl.SequenceName==null) { #>
 <# } else { #>

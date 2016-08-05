@@ -36,10 +36,10 @@ namespace OpenSource.DB.Repository.Tests
         {
             var _dapper = IocManager.IOCManager.Container.GetInstance<Itbl_AccountRepository>();
             var result = _dapper.FindAll(x => x.Id.In(new long[] { 6,7 })).First();
+            _dapper.Delete(result);
             result.password = "TkNHlwfUA2J3HWuuLzHQm8NgaxXxPa1fh3gI0zk=";
             result.WeChats = "1000";
-            result.Status = 88;
-            _dapper.Update(result, c => new object[]{c.password, c.Status, c.WeChats });
+            _dapper.Update(result, c => new []{c.password, c.WeChats });
             Assert.IsTrue(true);
         }
 
@@ -70,7 +70,7 @@ namespace OpenSource.DB.Repository.Tests
         {
             var _dapper = IocManager.IOCManager.Container.GetInstance<Itbl_AccountRepository>();
             var result = _dapper.FindAll(x => x.Id == 7 || x.Id == 6).First();
-            result.Status = 99;
+            //result.Status = 99;
             _dapper.TestTrans(result);
             Assert.IsTrue(true);
         }
