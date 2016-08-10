@@ -1,18 +1,14 @@
 ﻿using OpenSource.DB.Repository.Attributes;
-using OpenSource.DB.Repository.Attributes.Joins;
 using OpenSource.DB.Repository.Extensions;
 using OpenSource.Helps.DB.DbAttributes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Data.SqlClient;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Net.Http.Headers;
 using System.Reflection;
-using System.Security.Policy;
 using System.Text;
 
 namespace OpenSource.DB.Repository.SqlGenerator
@@ -158,11 +154,66 @@ namespace OpenSource.DB.Repository.SqlGenerator
             return new SqlQuery(sqlBuilder.ToString().TrimEnd(), entity);
         }
 
+        public virtual SqlQuery GetUpdate(TEntity entity, Expression<Func<TEntity, object>> field, Expression<Func<TEntity, bool>> predicate)
+        {
+            var properties =
+                this.BaseProperties.Where(
+                    p => !this.KeyProperties.Any(k => k.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)));
+
+            IList<string> fieldary = null;
+            if (null != field)
+                fieldary = ExpressionHelper.ExpressionRouter(field.Body).Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+            var sqlBuilder = new StringBuilder();
+
+            sqlBuilder.AppendFormat("UPDATE {0} SET {1} ", this.TableName, string.Join(",", properties.Select(p => null != fieldary && fieldary.Contains(p.ColumnName) ? $"{p.ColumnName} = @{p.Name}x1" : "null")).Replace("null,", ""));
+
+            IDictionary<string, object> expando = new ExpandoObject();
+            foreach (var propertyInfo in AllProperties)
+                expando.Add(propertyInfo.Name + "x1", propertyInfo.GetValue(entity));
+
+            BuilderPedicate(predicate, sqlBuilder, ref expando);
+
+            return new SqlQuery(sqlBuilder.ToString().TrimEnd(), expando);
+        }
+
         private string BuilderUpdate(IEnumerable<PropertyMetadata> properties, Expression<Func<TEntity, object>> field)
         {
             if (null == field) return string.Join(",", properties.Select(p => $"{p.ColumnName} = @{p.Name}"));
+
             var fieldary = ExpressionHelper.ExpressionRouter(field.Body).Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
             return string.Join(",", properties.Select(p => fieldary.Contains(p.ColumnName) ? $"{p.ColumnName} = @{p.Name}" : "null")).Replace("null,", "");
+        }
+
+        public virtual SqlQuery GetDelete(TEntity entity)
+        {
+            var sqlBuilder = new StringBuilder();
+            if (!LogicalDelete)
+            {
+                sqlBuilder.AppendFormat("DELETE FROM {0} WHERE {1}", this.TableName,
+                    string.Join(" AND ", this.KeyProperties.Select(p => $"{p.ColumnName} = @{p.Name}")));
+            }
+            else
+            {
+                sqlBuilder.AppendFormat("UPDATE {0} SET {1} WHERE {2}", this.TableName, $"{this.StatusProperty.ColumnName} = {this.LogicalDeleteValue}", string.Join(" AND ", this.KeyProperties.Select(p => $"{p.ColumnName} = @{p.Name}")));
+            }
+            return new SqlQuery(sqlBuilder.ToString(), entity);
+        }
+        public virtual SqlQuery GetDelete(Expression<Func<TEntity, bool>> predicate)
+        {
+            var sqlBuilder = new StringBuilder();
+            if (!LogicalDelete)
+            {
+                sqlBuilder.AppendFormat("DELETE FROM {0}", this.TableName);
+            }
+            else
+            {
+                sqlBuilder.AppendFormat("UPDATE {0} SET {1}", this.TableName, $"{this.StatusProperty.ColumnName} = {this.LogicalDeleteValue}");
+            }
+            IDictionary<string, object> expando = new ExpandoObject();
+            BuilderPedicate(predicate, sqlBuilder, ref expando);
+
+            return new SqlQuery(sqlBuilder.ToString(), expando);
         }
 
         #region Get Select
@@ -195,50 +246,6 @@ namespace OpenSource.DB.Repository.SqlGenerator
         }
 
 
-        private StringBuilder AppendListToSelect(StringBuilder originalBuilder, ref List<QueryParameter> queryProperties,
-            params Expression<Func<TEntity, object>>[] includes)
-        {
-            var joinsBuilder = new StringBuilder();
-
-            foreach (var include in includes)
-            {
-                var propertyName = ExpressionHelper.GetPropertyName(include);
-                var joinProperty = AllProperties.First(x => x.Name == propertyName);
-                var attrJoin = joinProperty.GetCustomAttribute<JoinAttributeBase>();
-                if (attrJoin != null)
-                {
-                    var joinString = "";
-                    if (attrJoin is LeftJoinAttribute)
-                    {
-                        joinString = "LEFT JOIN ";
-                    }
-                    else if (attrJoin is InnerJoinAttribute)
-                    {
-                        joinString = "INNER JOIN ";
-                    }
-                    else if (attrJoin is RightJoinAttribute)
-                    {
-                        joinString = "RIGHT JOIN ";
-                    }
-
-                    var joinType = joinProperty.PropertyType.IsGenericType()
-                        ? joinProperty.PropertyType.GenericTypeArguments[0]
-                        : joinProperty.PropertyType;
-
-                    var properties = joinType.GetProperties().Where(ExpressionHelper.GetPrimitivePropertiesPredicate());
-                    var props =
-                        properties.Where(p => !p.GetCustomAttributes<NotMappedAttribute>().Any())
-                            .Select(p => new PropertyMetadata(p));
-                    originalBuilder.Append(", " + GetFieldsSelect(attrJoin.TableName, props));
-
-
-                    joinsBuilder.Append($"{joinString} {attrJoin.TableName} ON {TableName}.{attrJoin.Key} = {attrJoin.TableName}.{attrJoin.ExternalKey} ")
-                    ;
-                }
-            }
-            return joinsBuilder;
-        }
-
         private static string GetFieldsSelect(string tableName, IEnumerable<PropertyMetadata> properties)
         {
             //Projection function
@@ -257,6 +264,17 @@ namespace OpenSource.DB.Repository.SqlGenerator
 
             IDictionary<string, object> expando = new ExpandoObject();
 
+            BuilderPedicate(predicate, builder, ref expando);
+
+            if (firstOnly && (SqlConnector == ESqlConnector.MySQL || SqlConnector == ESqlConnector.PostgreSQL))
+                builder.Append("LIMIT 1");
+
+
+            return new SqlQuery(builder.ToString().TrimEnd(), expando);
+        }
+
+        private void BuilderPedicate(Expression<Func<TEntity, bool>> predicate, StringBuilder builder, ref IDictionary<string, object> expando)
+        {
             if (predicate != null)
             {
                 // WHERE
@@ -264,9 +282,7 @@ namespace OpenSource.DB.Repository.SqlGenerator
 
                 FillQueryProperties(ExpressionHelper.GetExpression(predicate.Body), ExpressionType.Default,
                     ref queryProperties);
-
                 builder.Append(" WHERE ");
-
 
                 for (int i = 0; i < queryProperties.Count; i++)
                 {
@@ -276,12 +292,6 @@ namespace OpenSource.DB.Repository.SqlGenerator
                     GetQueryParameterQueryOperator(item, ref expando, ref builder);
                 }
             }
-
-            if (firstOnly && (SqlConnector == ESqlConnector.MySQL || SqlConnector == ESqlConnector.PostgreSQL))
-                builder.Append("LIMIT 1");
-
-
-            return new SqlQuery(builder.ToString().TrimEnd(), expando);
         }
 
         private void GetQueryParameterQueryOperator(QueryParameter item, ref IDictionary<string, object> obj, ref StringBuilder builder)
@@ -318,23 +328,6 @@ namespace OpenSource.DB.Repository.SqlGenerator
             return queryResult;
         }
 
-        public virtual SqlQuery GetDelete(TEntity entity)
-        {
-            var sqlBuilder = new StringBuilder();
-
-            if (!LogicalDelete)
-            {
-                sqlBuilder.AppendFormat("DELETE FROM {0} WHERE {1}", this.TableName,
-                    string.Join(" AND ", this.KeyProperties.Select(p => $"{p.ColumnName} = @{p.Name}")));
-            }
-            else
-            {
-                sqlBuilder.AppendFormat("UPDATE {0} SET {1} WHERE {2}", this.TableName, $"{this.StatusProperty.ColumnName} = {this.LogicalDeleteValue}", string.Join(" AND ", this.KeyProperties.Select(p => $"{p.ColumnName} = @{p.Name}")))
-                ;
-            }
-
-            return new SqlQuery(sqlBuilder.ToString(), entity);
-        }
 
 
         public virtual SqlQuery GetSelectCount(string sql, object param)

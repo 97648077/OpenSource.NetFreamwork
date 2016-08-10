@@ -58,7 +58,6 @@ namespace OpenSource.DB.Repository
             return result;
         }
 
-
         #endregion Find
 
         #region Insert
@@ -92,36 +91,57 @@ namespace OpenSource.DB.Repository
         #endregion Insert
 
         #region Delete
-
         public virtual bool Delete(TEntity instance)
         {
-
             var queryResult = SqlGenerator.GetDelete(instance);
+            return Delete(queryResult);
+        }
+
+        public virtual bool Delete(Expression<Func<TEntity, bool>> expression)
+        {
+            var queryResult = SqlGenerator.GetDelete(expression);
+            return Delete(queryResult);
+        }
+
+        public virtual bool Delete(SqlQuery queryResult)
+        {
             var Connection = MyConnection.Pop();
             var deleted = Connection.Execute(queryResult.Sql, queryResult.Param) > 0;
             MyConnection.Push(Connection);
             return deleted;
         }
 
-
         #endregion Delete
 
         #region Update
+        public virtual bool Update(TEntity instance)
+        {
+            var query = SqlGenerator.GetUpdate(instance);
+            return Update(query);
+        }
 
-        public virtual bool Update(TEntity instance, Expression<Func<TEntity, object>> field = null)
+        public virtual bool Update(TEntity instance, Expression<Func<TEntity, object>> field)
         {
             var query = SqlGenerator.GetUpdate(instance, field);
+            return Update(query);
+        }
+
+        public virtual bool Update(TEntity instance, Expression<Func<TEntity, object>> field, Expression<Func<TEntity, bool>> expression)
+        {
+            var query = SqlGenerator.GetUpdate(instance, field, expression);
+            return Update(query);
+        }
+
+        private bool Update(SqlQuery query)
+        {
             var Connection = MyConnection.Pop();
-            var updated = Connection.Execute(query.Sql, instance) > 0;
+            var updated = Connection.Execute(query.Sql, query.Param) > 0;
             MyConnection.Push(Connection);
             return updated;
         }
-
         #endregion Update
 
         #region Beetwen
-
-
         public IEnumerable<TEntity> FindAllBetween(object from, object to, Expression<Func<TEntity, object>> btwField)
         {
             return FindAllBetween(from, to, btwField, null);
@@ -129,7 +149,6 @@ namespace OpenSource.DB.Repository
 
         public IEnumerable<TEntity> FindAllBetween(object from, object to, Expression<Func<TEntity, object>> btwField, Expression<Func<TEntity, bool>> expression)
         {
-
             var queryResult = SqlGenerator.GetSelectBetween(from, to, btwField, expression);
             var Connection = MyConnection.Pop();
             var data = Connection.Query<TEntity>(queryResult.Sql, queryResult.Param);

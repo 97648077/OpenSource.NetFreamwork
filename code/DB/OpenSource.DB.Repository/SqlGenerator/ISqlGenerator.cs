@@ -39,10 +39,14 @@ namespace OpenSource.DB.Repository.SqlGenerator
 
         SqlQuery GetUpdate(TEntity entity, Expression<Func<TEntity, object>> field = null);
 
+        SqlQuery GetUpdate(TEntity entity, Expression<Func<TEntity, object>> field, Expression<Func<TEntity, bool>> predicate);
+
         SqlQuery GetDelete(TEntity entity);
 
-        SqlQuery GetSelectCount(string sql,object param);
+        SqlQuery GetDelete(Expression<Func<TEntity, bool>> predicate);
 
-        SqlQuery GetSelectPages(long from, long to,string sql, object param, Expression<Func<TEntity, object>> field, bool isDesc);
+        SqlQuery GetSelectCount(string sql, object param);
+
+        SqlQuery GetSelectPages(long from, long to, string sql, object param, Expression<Func<TEntity, object>> field, bool isDesc);
     }
 }
