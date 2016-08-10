@@ -15,7 +15,7 @@ using OpenSource.DB.IRepository;
 
 namespace OpenSource.DB.Repository
 {
-    public class DapperRepository<TEntity> : IDapperRepository<TEntity> where TEntity : class
+    abstract public class DapperRepository<TEntity> : IDapperRepository<TEntity> where TEntity : class
     {
         public DapperRepository()
         {
