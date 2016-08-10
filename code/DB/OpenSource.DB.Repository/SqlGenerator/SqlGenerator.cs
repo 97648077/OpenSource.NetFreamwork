@@ -166,7 +166,7 @@ namespace OpenSource.DB.Repository.SqlGenerator
 
             var sqlBuilder = new StringBuilder();
 
-            sqlBuilder.AppendFormat("UPDATE {0} SET {1} ", this.TableName, string.Join(",", properties.Select(p => null != fieldary && fieldary.Contains(p.ColumnName) ? $"{p.ColumnName} = @{p.Name}x1" : "null")).Replace("null,", ""));
+            sqlBuilder.AppendFormat("UPDATE {0} SET {1} ", this.TableName, string.Join(",", properties.Select(p => null == fieldary || fieldary.Contains(p.ColumnName) ? $"{p.ColumnName} = @{p.Name}x1" : "null")).Replace("null,", ""));
 
             IDictionary<string, object> expando = new ExpandoObject();
             foreach (var propertyInfo in AllProperties)
