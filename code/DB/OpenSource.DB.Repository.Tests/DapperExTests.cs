@@ -42,7 +42,7 @@ namespace OpenSource.DB.Repository.Tests
             _dapper.Delete(c => c.Id == 6);
             result.password = "TkNHlwfUA2J3HWuuLzHQm8NgaxXxPa1fh3gI0zk=";
             result.WeChats = "1000";
-            _dapper.Update(result, null, c => c.Id == 9);
+            _dapper.Update(result);
             Assert.IsTrue(true);
         }
 
