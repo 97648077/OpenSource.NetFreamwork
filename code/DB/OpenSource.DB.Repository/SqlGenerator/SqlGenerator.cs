@@ -10,6 +10,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace OpenSource.DB.Repository.SqlGenerator
 {
@@ -300,20 +301,28 @@ namespace OpenSource.DB.Repository.SqlGenerator
             {
                 case "In":
                 case "Not_In":
-                    builder.Append(string.Format("{0} {1} ({2}) ", item.PropertyName,
-                             item.QueryOperator.Replace("_", " "), item.PropertyValue));
+                    builder.AppendFormat("{0} {1} ({2}) ", item.PropertyName,
+                             item.QueryOperator.Replace("_", " "), SqlFilter(item.PropertyValue.ToString()));
                     break;
                 case "Like":
                 case "Not_Like":
-                    builder.Append(string.Format("{0} {1} '{2}' ", item.PropertyName,
-                         item.QueryOperator.Replace("_", " "), item.PropertyValue));
+                    builder.AppendFormat("{0} {1} '{2}' ", item.PropertyName,
+                         item.QueryOperator.Replace("_", " "), SqlFilter(item.PropertyValue.ToString()));
                     break;
                 default:
-                    builder.Append(string.Format("{0} {1} {2} @{1} ", item.LinkingOperator,
-                              item.PropertyName, item.QueryOperator));
+                    builder.AppendFormat("{0} {1} {2} @{1} ", item.LinkingOperator,
+                              item.PropertyName, item.QueryOperator);
                     obj[item.PropertyName] = item.PropertyValue;
                     break;
             }
+        }
+
+        private string SqlFilter(string sql)
+        {
+            var sqlLower = sql.ToLower();
+            if ("and|exec|insert|select|delete|update|chr|mid|master|or|truncate|char|declare|join|cmd".Split('|').Any(i => (sqlLower.IndexOf(i + " ", StringComparison.Ordinal) > -1) || (sqlLower.IndexOf(" " + i, StringComparison.Ordinal) > -1)))
+                throw new Exception("find sql filter..");
+            return sql;
         }
 
         public virtual SqlQuery GetSelectBetween(object from, object to, Expression<Func<TEntity, object>> btwField,
@@ -412,7 +421,5 @@ namespace OpenSource.DB.Repository.SqlGenerator
         }
 
     }
-
-
     #endregion
 }
