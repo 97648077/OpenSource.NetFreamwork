@@ -19,8 +19,8 @@ namespace OpenSource.DB.Repository
     {
         public DapperRepository()
         {
-            MyConnection = new DapperDbContextDir(typeof(TEntity)).dbConnPool;
             SqlGenerator = SqlGeneratorDir.ExistModelDesCache<TEntity>(ESqlConnector.MSSQL);
+            MyConnection = new DapperDbContextDir(SqlGenerator.TableName).dbConnPool;
         }
 
         public DapperDbContext MyConnection { get; }

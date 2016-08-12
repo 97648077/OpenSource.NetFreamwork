@@ -21,11 +21,9 @@ namespace OpenSource.DB.Repository.Cache
         {
         }
 
-        public DapperDbContextDir(Type obj)
+        public DapperDbContextDir(string tableName)
         {
-            var name = obj.Name;
-            var key = settingDis.ContainsKey(name) ? name : "default";
-
+            var key = settingDis.ContainsKey(tableName) ? tableName : "default";
             SqlConnectionString();
             config = settingDis[key];
 
