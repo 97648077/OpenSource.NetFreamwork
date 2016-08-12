@@ -3,7 +3,7 @@
 
 
 
-最新Dapper扩展,来源MicrO.ORM 
+最新Dapper扩展
 
 数据库连接池
 
