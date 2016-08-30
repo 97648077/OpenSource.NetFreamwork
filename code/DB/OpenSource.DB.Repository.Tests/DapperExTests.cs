@@ -26,7 +26,7 @@ namespace OpenSource.DB.Repository.Tests
         public void FindPageTest()
         {
             var result = IocManager.IOCManager.Container.GetInstance<Itbl_AccountRepository>();
-            var getresult = result.Find(x => x.username.Like("oh%"));
+            var getresult = result.Find(x => x.username.Is_Not_Null());
 
             //DapperRepository<tbl_PublicAccount> _dapper = new DapperRepository<tbl_PublicAccount>();
             Assert.IsTrue(true);

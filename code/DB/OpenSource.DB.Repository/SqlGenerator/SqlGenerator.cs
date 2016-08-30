@@ -309,6 +309,10 @@ namespace OpenSource.DB.Repository.SqlGenerator
                     builder.AppendFormat("{0} {1} '{2}' ", item.PropertyName,
                          item.QueryOperator.Replace("_", " "), SqlFilter(item.PropertyValue.ToString()));
                     break;
+                case "Is_Null":
+                case "Is_Not_Null":
+                    builder.AppendFormat("{0} {1}", item.PropertyName, item.QueryOperator.Replace("_", " "));
+                    break;
                 default:
                     builder.AppendFormat("{0} {1} {2} @{1} ", item.LinkingOperator,
                               item.PropertyName, item.QueryOperator);
@@ -415,7 +419,7 @@ namespace OpenSource.DB.Repository.SqlGenerator
                 string link = ExpressionHelper.GetSqlOperator(linkingType);
                 string opr = mce.Method.Name;
                 string propertyName = ExpressionHelper.ExpressionRouter(mce.Arguments[0]);
-                object propertyValue = ExpressionHelper.ExpressionRouter(mce.Arguments[1]);
+                object propertyValue = ExpressionHelper.ExpressionRouter(mce.Arguments.Count > 1 ? mce.Arguments[1] : null);
                 queryProperties.Add(new QueryParameter(link, propertyName, propertyValue, opr));
             }
         }

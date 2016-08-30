@@ -27,5 +27,15 @@ namespace OpenSource.Helps.DB.DbLamda
         {
             return true;
         }
+
+        public static bool Is_Null(this object str)
+        {
+            return true;
+        }
+
+        public static bool Is_Not_Null(this object str)
+        {
+            return true;
+        }
     }
 }
