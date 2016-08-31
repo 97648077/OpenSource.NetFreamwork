@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -154,24 +156,27 @@ namespace OpenSource.DB.Repository.SqlGenerator
                 else if (ce.Value is ValueType)
                     return ce.Value.ToString();
                 else if (ce.Value is string || ce.Value is DateTime || ce.Value is char)
-                    return string.Format("'{0}'", ce.Value);
+                    return $"'{ce.Value}'";
 
-                var type = ce.Value.GetType();
-                var propertie = type.GetFields();
+                var propertie = ce.Value.GetType().GetFields();
                 if (propertie.Length > 0)
                 {
                     var value = propertie[0].GetValue(ce.Value);
                     if (value is ValueType)
                         return value.ToString();
                     else if (value is string || value is DateTime || value is char)
-                        return string.Format("'{0}'", value);
+                        return $"'{value}'";
                     else if (value is Array)
                     {
-                        var valueAry = value as object[];
-                        if (valueAry[0] is ValueType)
-                            return string.Join(",", valueAry);
+                        StringBuilder sbBuilder = new StringBuilder();
+                        var valueByt = value as Array;
+                        if (valueByt.GetValue(0) is ValueType)
+                            foreach (var s in valueByt)
+                                sbBuilder.Append(string.Concat(s, ","));
                         else
-                            return $"'{string.Join("','", valueAry)}'";
+                            foreach (var s in valueByt)
+                                sbBuilder.Append(string.Concat("'", s , "',"));
+                        return sbBuilder.ToString(0, sbBuilder.Length - 1);
                     }
                 }
             }
