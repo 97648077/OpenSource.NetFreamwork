@@ -37,14 +37,13 @@ namespace OpenSource.DB.Repository.Tests
         {
             var _dapper = IocManager.IOCManager.Container.GetInstance<Itbl_AccountRepository>();
 
-            List<string> sss=new List<string>();
-            sss.Add("update66");
-            sss.Add("update99");
+            long[] sss = new long[2];
+            sss[0] = 9999;
+            sss[1] = 2222;
 
-            string[] dd = sss.ToArray();
 
             String s = "sss";
-            var result = _dapper.FindAll(x => x.username.In(dd)).First();
+            var result = _dapper.FindAll(x => x.Id.In(sss)).FirstOrDefault();
             //result.username = null;
             var cc = result.Validation<tbl_Account>();
             _dapper.Delete(c => c.Id == 6);
