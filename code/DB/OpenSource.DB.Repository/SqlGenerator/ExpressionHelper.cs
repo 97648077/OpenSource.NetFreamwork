@@ -122,10 +122,13 @@ namespace OpenSource.DB.Repository.SqlGenerator
         //表达式路由计算 
         public static string ExpressionRouter(Expression exp)
         {
-             if (exp is MemberExpression)
+            if (exp is MemberExpression)
             {
                 MemberExpression me = ((MemberExpression)exp);
-                return me.Member.Name;
+                if (!exp.ToString().StartsWith("value"))
+                    return me.Member.Name;
+                else
+                    return ExpressionRouter(me.Expression);
             }
             else if (exp is NewArrayExpression)
             {
@@ -141,14 +144,7 @@ namespace OpenSource.DB.Repository.SqlGenerator
             else if (exp is MethodCallExpression)
             {
                 MethodCallExpression mce = (MethodCallExpression)exp;
-                if (mce.Method.Name == "Like")
-                    return string.Format("({0} LIKE {1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
-                else if (mce.Method.Name == "NotLike")
-                    return string.Format("({0} Not LIKE {1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
-                else if (mce.Method.Name == "In")
-                    return string.Format("{0} IN ({1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
-                else if (mce.Method.Name == "NotIn")
-                    return string.Format("{0} NOT IN ({1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
+                //return ExpressionRouter(mce);
             }
             else if (exp is ConstantExpression)
             {
@@ -158,7 +154,26 @@ namespace OpenSource.DB.Repository.SqlGenerator
                 else if (ce.Value is ValueType)
                     return ce.Value.ToString();
                 else if (ce.Value is string || ce.Value is DateTime || ce.Value is char)
-                    return string.Format("'{0}'", ce.Value.ToString());
+                    return string.Format("'{0}'", ce.Value);
+
+                var type = ce.Value.GetType();
+                var propertie = type.GetFields();
+                if (propertie.Length > 0)
+                {
+                    var value = propertie[0].GetValue(ce.Value);
+                    if (value is ValueType)
+                        return value.ToString();
+                    else if (value is string || value is DateTime || value is char)
+                        return string.Format("'{0}'", value);
+                    else if (value is Array)
+                    {
+                        var valueAry = value as object[];
+                        if (valueAry[0] is ValueType)
+                            return string.Join(",", valueAry);
+                        else
+                            return $"'{string.Join("','", valueAry)}'";
+                    }
+                }
             }
             else if (exp is UnaryExpression)
             {

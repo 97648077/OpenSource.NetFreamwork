@@ -36,7 +36,15 @@ namespace OpenSource.DB.Repository.Tests
         public void UpdateTests()
         {
             var _dapper = IocManager.IOCManager.Container.GetInstance<Itbl_AccountRepository>();
-            var result = _dapper.FindAll(x => x.username.In(new  string[] {"Update44"})).First();
+
+            List<string> sss=new List<string>();
+            sss.Add("update66");
+            sss.Add("update99");
+
+            string[] dd = sss.ToArray();
+
+            String s = "sss";
+            var result = _dapper.FindAll(x => x.username.In(dd)).First();
             //result.username = null;
             var cc = result.Validation<tbl_Account>();
             _dapper.Delete(c => c.Id == 6);
