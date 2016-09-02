@@ -124,13 +124,19 @@ namespace OpenSource.DB.Repository.SqlGenerator
         //表达式路由计算 
         public static string ExpressionRouter(Expression exp)
         {
+            if (exp is BinaryExpression)
+            {
+                BinaryExpression be = (BinaryExpression)exp;
+                if (exp.NodeType != ExpressionType.AndAlso && exp.NodeType != ExpressionType.OrElse)
+                    return GetValue(be).ToString();
+            }
             if (exp is MemberExpression)
             {
                 MemberExpression me = ((MemberExpression)exp);
                 if (!exp.ToString().StartsWith("value"))
                     return me.Member.Name;
                 else
-                    return ExpressionRouter(me.Expression);
+                    return GetExpressiongValue(GetValue(me));
             }
             else if (exp is NewArrayExpression)
             {
@@ -146,7 +152,7 @@ namespace OpenSource.DB.Repository.SqlGenerator
             else if (exp is MethodCallExpression)
             {
                 MethodCallExpression mce = (MethodCallExpression)exp;
-                //return ExpressionRouter(mce);
+                return GetExpressiongValue(GetValue(mce));
             }
             else if (exp is ConstantExpression)
             {
@@ -156,28 +162,13 @@ namespace OpenSource.DB.Repository.SqlGenerator
                 else if (ce.Value is ValueType)
                     return ce.Value.ToString();
                 else if (ce.Value is string || ce.Value is DateTime || ce.Value is char)
-                    return $"'{ce.Value}'";
+                    return string.Format("'{0}'", ce.Value);
 
                 var propertie = ce.Value.GetType().GetFields();
                 if (propertie.Length > 0)
                 {
                     var value = propertie[0].GetValue(ce.Value);
-                    if (value is ValueType)
-                        return value.ToString();
-                    else if (value is string || value is DateTime || value is char)
-                        return $"'{value}'";
-                    else if (value is Array)
-                    {
-                        StringBuilder sbBuilder = new StringBuilder();
-                        var valueByt = value as Array;
-                        if (valueByt.GetValue(0) is ValueType)
-                            foreach (var s in valueByt)
-                                sbBuilder.Append(string.Concat(s, ","));
-                        else
-                            foreach (var s in valueByt)
-                                sbBuilder.Append(string.Concat("'", s , "',"));
-                        return sbBuilder.ToString(0, sbBuilder.Length - 1);
-                    }
+                    GetExpressiongValue(value);
                 }
             }
             else if (exp is UnaryExpression)
@@ -186,6 +177,27 @@ namespace OpenSource.DB.Repository.SqlGenerator
                 return ExpressionRouter(ue.Operand);
             }
             return null;
+        }
+
+        private static string GetExpressiongValue(object value)
+        {
+            if (value is ValueType)
+                return value.ToString();
+            else if (value is string || value is DateTime || value is char)
+                return string.Format("'{0}'", value);
+            else if (value is Array)
+            {
+                StringBuilder sbBuilder = new StringBuilder();
+                var valueByt = value as Array;
+                if (valueByt.GetValue(0) is ValueType)
+                    foreach (var s in valueByt)
+                        sbBuilder.Append(string.Concat(s, ","));
+                else
+                    foreach (var s in valueByt)
+                        sbBuilder.Append(string.Concat("'", s, "',"));
+                return sbBuilder.ToString(0, sbBuilder.Length - 1);
+            }
+            return "";
         }
     }
 }
