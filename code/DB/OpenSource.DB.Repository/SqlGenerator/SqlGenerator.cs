@@ -161,13 +161,10 @@ namespace OpenSource.DB.Repository.SqlGenerator
                 this.BaseProperties.Where(
                     p => !this.KeyProperties.Any(k => k.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)));
 
-            IList<string> fieldary = null;
-            if (null != field)
-                fieldary = ExpressionHelper.ExpressionRouter(field.Body).Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
-
+ 
             var sqlBuilder = new StringBuilder();
 
-            sqlBuilder.AppendFormat("UPDATE {0} SET {1} ", this.TableName, string.Join(",", properties.Select(p => null == fieldary || fieldary.Contains(p.ColumnName) ? $"{p.ColumnName} = @{p.Name}x1" : "null")).Replace("null,", ""));
+            sqlBuilder.AppendFormat("UPDATE {0} SET {1} ", this.TableName, BuilderUpdate(properties, field,"x1"));
 
             IDictionary<string, object> expando = new ExpandoObject();
             foreach (var propertyInfo in AllProperties)
@@ -178,12 +175,12 @@ namespace OpenSource.DB.Repository.SqlGenerator
             return new SqlQuery(sqlBuilder.ToString().TrimEnd(), expando);
         }
 
-        private string BuilderUpdate(IEnumerable<PropertyMetadata> properties, Expression<Func<TEntity, object>> field)
+        private string BuilderUpdate(IEnumerable<PropertyMetadata> properties, Expression<Func<TEntity, object>> field,string endStr="")
         {
-            if (null == field) return string.Join(",", properties.Select(p => $"{p.ColumnName} = @{p.Name}"));
+            if (null == field) return string.Join(",", properties.Select(p => $"{p.ColumnName}{endStr} = @{p.Name}{endStr}"));
 
             var fieldary = ExpressionHelper.ExpressionRouter(field.Body).Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            return string.Join(",", properties.Select(p => fieldary.Contains(p.ColumnName) ? $"{p.ColumnName} = @{p.Name}" : "null")).Replace("null,", "");
+            return string.Join(",", fieldary.Select(p=> $"{p}=@{p}{endStr}"));
         }
 
         public virtual SqlQuery GetDelete(TEntity entity)
