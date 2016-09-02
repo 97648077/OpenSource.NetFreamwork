@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -136,7 +138,7 @@ namespace OpenSource.DB.Repository.SqlGenerator
                 if (!exp.ToString().StartsWith("value"))
                     return me.Member.Name;
                 else
-                    return GetExpressiongValue(GetValue(me));
+                    return GetExpressiongValue(GetValue(me)).Replace("'", "");
             }
             else if (exp is NewArrayExpression)
             {
@@ -176,6 +178,11 @@ namespace OpenSource.DB.Repository.SqlGenerator
                 UnaryExpression ue = ((UnaryExpression)exp);
                 return ExpressionRouter(ue.Operand);
             }
+            else if (exp is NewExpression)
+            {
+                NewExpression ne = (NewExpression)exp;
+                return string.Join(",", ne.Members.Select(m => m.Name));
+            }
             return null;
         }
 
@@ -184,7 +191,7 @@ namespace OpenSource.DB.Repository.SqlGenerator
             if (value is ValueType)
                 return value.ToString();
             else if (value is string || value is DateTime || value is char)
-                return string.Format("'{0}'", value);
+                return $"'{value}'";
             else if (value is Array)
             {
                 StringBuilder sbBuilder = new StringBuilder();
