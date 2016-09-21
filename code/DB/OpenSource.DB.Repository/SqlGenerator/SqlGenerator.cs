@@ -161,26 +161,35 @@ namespace OpenSource.DB.Repository.SqlGenerator
                 this.BaseProperties.Where(
                     p => !this.KeyProperties.Any(k => k.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)));
 
- 
             var sqlBuilder = new StringBuilder();
 
-            sqlBuilder.AppendFormat("UPDATE {0} SET {1} ", this.TableName, BuilderUpdate(properties, field,"x1"));
+            string param = BuilderUpdate(properties, field, "x1");
+
+            sqlBuilder.AppendFormat("UPDATE {0} SET {1} ", this.TableName, param);
 
             IDictionary<string, object> expando = new ExpandoObject();
-            foreach (var propertyInfo in AllProperties)
-                expando.Add(propertyInfo.Name + "x1", propertyInfo.GetValue(entity));
+            if (null != field)
+            {
+                List<string> paStrings = param.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                foreach (var propertyInfo in AllProperties)
+                    if (paStrings.Contains(propertyInfo.Name))
+                        expando.Add(propertyInfo.Name + "x1", propertyInfo.GetValue(entity));
+            }
+            else
+                foreach (var propertyInfo in AllProperties)
+                    expando.Add(propertyInfo.Name + "x1", propertyInfo.GetValue(entity));
 
             BuilderPedicate(predicate, sqlBuilder, ref expando);
 
             return new SqlQuery(sqlBuilder.ToString().TrimEnd(), expando);
         }
 
-        private string BuilderUpdate(IEnumerable<PropertyMetadata> properties, Expression<Func<TEntity, object>> field,string endStr="")
+        private string BuilderUpdate(IEnumerable<PropertyMetadata> properties, Expression<Func<TEntity, object>> field, string endStr = "")
         {
             if (null == field) return string.Join(",", properties.Select(p => $"{p.ColumnName}{endStr} = @{p.Name}{endStr}"));
 
             var fieldary = ExpressionHelper.ExpressionRouter(field.Body).Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            return string.Join(",", fieldary.Select(p=> $"{p}=@{p}{endStr}"));
+            return string.Join(",", fieldary.Select(p => $"{p}=@{p}{endStr}"));
         }
 
         public virtual SqlQuery GetDelete(TEntity entity)
