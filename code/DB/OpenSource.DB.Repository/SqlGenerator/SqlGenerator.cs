@@ -157,28 +157,31 @@ namespace OpenSource.DB.Repository.SqlGenerator
 
         public virtual SqlQuery GetUpdate(TEntity entity, Expression<Func<TEntity, object>> field, Expression<Func<TEntity, bool>> predicate)
         {
-            var properties =
-                this.BaseProperties.Where(
-                    p => !this.KeyProperties.Any(k => k.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)));
-
             var sqlBuilder = new StringBuilder();
-
-            string param = BuilderUpdate(properties, field, "x1");
-
-            sqlBuilder.AppendFormat("UPDATE {0} SET {1} ", this.TableName, param);
-
             IDictionary<string, object> expando = new ExpandoObject();
+            string param = string.Empty;
             if (null != field)
             {
-                List<string> paStrings = param.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var fieldary =
+                    ExpressionHelper.ExpressionRouter(field.Body)
+                        .Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)
+                        .ToList();
+                param = string.Join(",", fieldary.Select(p => $"{p}=@{p}x1"));
+
                 foreach (var propertyInfo in AllProperties)
-                    if (paStrings.Contains(propertyInfo.Name))
+                    if (fieldary.Contains(propertyInfo.Name))
                         expando.Add(propertyInfo.Name + "x1", propertyInfo.GetValue(entity));
             }
             else
+            {
+                var properties =
+                this.BaseProperties.Where(
+                    p => !this.KeyProperties.Any(k => k.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)));
+                param = string.Join(",", properties.Select(p => $"{p.ColumnName} = @{p.Name}x1"));
                 foreach (var propertyInfo in AllProperties)
                     expando.Add(propertyInfo.Name + "x1", propertyInfo.GetValue(entity));
-
+            }
+            sqlBuilder.AppendFormat("UPDATE {0} SET {1} ", this.TableName, param);
             BuilderPedicate(predicate, sqlBuilder, ref expando);
 
             return new SqlQuery(sqlBuilder.ToString().TrimEnd(), expando);
@@ -186,7 +189,7 @@ namespace OpenSource.DB.Repository.SqlGenerator
 
         private string BuilderUpdate(IEnumerable<PropertyMetadata> properties, Expression<Func<TEntity, object>> field, string endStr = "")
         {
-            if (null == field) return string.Join(",", properties.Select(p => $"{p.ColumnName}{endStr} = @{p.Name}{endStr}"));
+            if (null == field) return string.Join(",", properties.Select(p => $"{p.ColumnName} = @{p.Name}{endStr}"));
 
             var fieldary = ExpressionHelper.ExpressionRouter(field.Body).Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
             return string.Join(",", fieldary.Select(p => $"{p}=@{p}{endStr}"));
